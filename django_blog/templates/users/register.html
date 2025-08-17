@@ -1,0 +1,21 @@
+{% extends 'users/base_auth.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Register{% endblock %}
+
+{% block auth_content %}
+    <form method="POST">
+        {% csrf_token %}
+        {{ form|crispy }}
+        <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary">Sign Up</button>
+        </div>
+    </form>
+{% endblock %}
+
+{% block auth_footer %}
+    <p class="mb-0">
+        Already have an account? 
+        <a href="{% url 'users:login' %}">Login here</a>
+    </p>
+{% endblock %}
