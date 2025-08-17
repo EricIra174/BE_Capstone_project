@@ -1,0 +1,81 @@
+/* Authentication forms styling */
+
+.auth-form {
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.auth-form h2 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: #333;
+}
+
+.auth-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.auth-form .form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.auth-form .form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.auth-form .btn {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.auth-form .btn:hover {
+    background-color: #0056b3;
+}
+
+.auth-form .form-footer {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.auth-form .form-footer a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.auth-form .form-footer a:hover {
+    text-decoration: underline;
+}
+
+/* Error messages */
+.errorlist {
+    color: #dc3545;
+    padding-left: 1rem;
+    margin: 0.5rem 0;
+    list-style: none;
+}
+
+/* Form validation */
+.is-invalid {
+    border-color: #dc3545 !important;
+}
+
+.invalid-feedback {
+    color: #dc3545;
+    font-size: 0.875em;
+    margin-top: 0.25rem;
+}
