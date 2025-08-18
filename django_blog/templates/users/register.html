@@ -1,0 +1,84 @@
+{% extends 'users/base_auth.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Create an Account{% endblock %}
+
+{% block auth_content %}
+    <form method="POST" class="auth-form-content">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        <div class="form-group">
+            <label for="{{ form.username.id_for_label }}">Username</label>
+            {{ form.username }}
+            {% if form.username.errors %}
+                <div class="invalid-feedback">
+                    {{ form.username.errors|join:", " }}
+                </div>
+            {% endif %}
+            <small class="form-text text-muted">Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.email.id_for_label }}">Email</label>
+            {{ form.email }}
+            {% if form.email.errors %}
+                <div class="invalid-feedback">
+                    {{ form.email.errors|join:", " }}
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.password1.id_for_label }}">Password</label>
+            {{ form.password1 }}
+            {% if form.password1.errors %}
+                <div class="invalid-feedback">
+                    {{ form.password1.errors|join:", " }}
+                </div>
+            {% endif %}
+            <small class="form-text text-muted">
+                Your password must contain at least 8 characters, can't be too similar to your other personal information, 
+                can't be a commonly used password, and can't be entirely numeric.
+            </small>
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.password2.id_for_label }}">Password Confirmation</label>
+            {{ form.password2 }}
+            {% if form.password2.errors %}
+                <div class="invalid-feedback">
+                    {{ form.password2.errors|join:", " }}
+                </div>
+            {% endif %}
+            <small class="form-text text-muted">Enter the same password as before, for verification.</small>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Sign Up</button>
+    </form>
+{% endblock %}
+
+{% block auth_footer %}
+    <p>Already have an account? <a href="{% url 'users:login' %}">Login here</a></p>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    // Add Bootstrap classes to form elements
+    document.addEventListener('DOMContentLoaded', function() {
+        // Style form inputs
+        const inputs = document.querySelectorAll('input[type="text"], input[type="password"], input[type="email"]');
+        inputs.forEach(input => {
+            input.classList.add('form-control');
+        });
+    });
+</script>
+{% endblock %}

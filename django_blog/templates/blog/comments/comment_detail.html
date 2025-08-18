@@ -1,0 +1,165 @@
+{% load static %}
+{% load humanize %}
+
+<div id="comment-{{ comment.id }}" class="card mb-3 {% if not comment.approved %}border-warning{% endif %}" 
+     data-comment-id="{{ comment.id }}">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+            <img src="{{ comment.author.profile.image.url }}" 
+                 class="rounded-circle me-2" 
+                 width="32" 
+                 height="32" 
+                 alt="{{ comment.author.username }}">
+            <div>
+                <h6 class="mb-0">
+                    {{ comment.author.username }}
+                    {% if comment.author.is_staff %}
+                        <span class="badge bg-primary ms-1">Staff</span>
+                    {% endif %}
+                </h6>
+                <small class="text-muted">
+                    {{ comment.created_at|naturaltime }}
+                    {% if comment.updated_at != comment.created_at %}
+                        (edited)
+                    {% endif %}
+                    {% if not comment.approved %}
+                        <span class="badge bg-warning text-dark">Pending Approval</span>
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                    type="button" 
+                    id="commentMenu{{ comment.id }}" 
+                    data-bs-toggle="dropdown" 
+                    aria-expanded="false">
+                <i class="bi bi-three-dots-vertical"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="commentMenu{{ comment.id }}">
+                {% if user == comment.author or user.is_staff %}
+                    <li>
+                        <a class="dropdown-item" 
+                           href="{% url 'blog:comment-update' comment.id %}">
+                            <i class="bi bi-pencil me-2"></i>Edit
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item text-danger" 
+                           href="{% url 'blog:comment-delete' comment.id %}">
+                            <i class="bi bi-trash me-2"></i>Delete
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                {% endif %}
+                <li>
+                    <a class="dropdown-item" 
+                       href="#" 
+                       data-bs-toggle="modal" 
+                       data-bs-target="#reportModal{{ comment.id }}">
+                        <i class="bi bi-flag me-2"></i>Report
+                    </a>
+                </li>
+                {% if user.is_staff %}
+                    <li>
+                        <form method="post" action="{% url 'blog:comment-approve-toggle' comment.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="dropdown-item">
+                                <i class="bi bi-{{ comment.approved|yesno:'check-circle,clock' }} me-2"></i>
+                                {{ comment.approved|yesno:'Unapprove,Approve' }} Comment
+                            </button>
+                        </form>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="comment-content">
+            {{ comment.content|linebreaks }}
+        </div>
+        
+        <div class="d-flex justify-content-between align-items-center mt-2">
+            <div>
+                <button class="btn btn-sm btn-outline-primary like-comment-btn" 
+                        data-comment-id="{{ comment.id }}"
+                        data-liked="{% if user in comment.likes.all %}true{% else %}false{% endif %}">
+                    <i class="bi {% if user in comment.likes.all %}bi-hand-thumbs-up-fill{% else %}bi-hand-thumbs-up{% endif %}"></i>
+                    <span class="like-count">{{ comment.likes.count }}</span>
+                </button>
+                
+                <button class="btn btn-sm btn-outline-secondary ms-2 reply-btn" 
+                        data-comment-id="{{ comment.id }}">
+                    <i class="bi bi-reply"></i> Reply
+                </button>
+            </div>
+            
+            {% if comment.get_replies %}
+                <button class="btn btn-sm btn-link text-muted view-replies" 
+                        data-comment-id="{{ comment.id }}">
+                    <i class="bi bi-chevron-down"></i> 
+                    <span class="reply-count">{{ comment.get_replies.count }} 
+                        {{ comment.get_replies.count|pluralize:"reply,replies" }}</span>
+                </button>
+            {% endif %}
+        </div>
+        
+        <!-- Reply form (initially hidden) -->
+        <div id="reply-form-{{ comment.id }}" class="mt-3" style="display: none;">
+            <form method="post" action="{% url 'blog:comment-create' comment.post.id %}" class="reply-form">
+                {% csrf_token %}
+                <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                <div class="input-group">
+                    <input type="text" name="content" class="form-control" 
+                           placeholder="Write a reply..." required>
+                    <button type="submit" class="btn btn-primary">Reply</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Replies section -->
+        {% if comment.get_replies %}
+            <div id="replies-{{ comment.id }}" class="mt-3 ms-4" style="display: none;">
+                {% for reply in comment.get_replies %}
+                    {% include 'blog/comments/comment_detail.html' with comment=reply %}
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Report Modal -->
+<div class="modal fade" id="reportModal{{ comment.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Report Comment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'blog:report-comment' comment.id %}">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">Reason for reporting</label>
+                        <select class="form-select" id="reason" name="reason" required>
+                            <option value="">Select a reason...</option>
+                            <option value="spam">Spam or advertising</option>
+                            <option value="abuse">Abusive or hateful content</option>
+                            <option value="offensive">Offensive content</option>
+                            <option value="privacy">Privacy violation</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="details" class="form-label">Additional details (optional)</label>
+                        <textarea class="form-control" id="details" name="details" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Submit Report</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
