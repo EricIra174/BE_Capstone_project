@@ -1,0 +1,33 @@
+{% extends 'blog/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="content-section">
+    <form method="POST" action="">
+        {% csrf_token %}
+        <fieldset class="form-group">
+            <legend class="border-bottom mb-4">
+                {% if object %}
+                    Update Comment
+                {% else %}
+                    Add a Comment
+                {% endif %}
+            </legend>
+            {{ form|crispy }}
+        </fieldset>
+        <div class="form-group">
+            <button class="btn btn-outline-info" type="submit">
+                {% if object %}
+                    Update
+                {% else %}
+                    Post Comment
+                {% endif %}
+            </button>
+            <a href="{% if object %}{{ object.post.get_absolute_url }}{% else %}{% url 'blog:post-detail' post_id %}{% endif %}" 
+               class="btn btn-outline-secondary">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

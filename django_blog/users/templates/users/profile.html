@@ -1,0 +1,27 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="content-section">
+    <div class="media">
+        <img class="rounded-circle account-img" src="{{ user.profile.image_url }}" alt="{{ user.username }}'s profile picture">
+        <div class="media-body">
+            <h2 class="account-heading">{{ user.username }}</h2>
+            <p class="text-secondary">{{ user.email }}</p>
+            {% if user.profile.bio %}
+                <p class="text-muted">{{ user.profile.bio }}</p>
+            {% endif %}
+            {% if user.profile.location %}
+                <p class="text-muted"><i class="fas fa-map-marker-alt"></i> {{ user.profile.location }}</p>
+            {% endif %}
+            {% if user.profile.website %}
+                <p class="text-muted"><i class="fas fa-globe"></i> <a href="{{ user.profile.website }}" target="_blank">{{ user.profile.website }}</a></p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="mt-4">
+        <a href="{% url 'users:profile_update' %}" class="btn btn-outline-info">Update Profile</a>
+        <a href="{% url 'blog:user-posts' user.username %}" class="btn btn-outline-secondary">View My Posts</a>
+    </div>
+</div>
+{% endblock %}

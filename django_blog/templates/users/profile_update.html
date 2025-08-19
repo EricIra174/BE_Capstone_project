@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Update Profile{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">Update Profile</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <fieldset class="form-group">
+                            <legend class="border-bottom mb-4">Account Info</legend>
+                            {{ u_form|crispy }}
+                        </fieldset>
+                        <fieldset class="form-group mt-4">
+                            <legend class="border-bottom mb-4">Profile Info</legend>
+                            <div class="text-center mb-4">
+                                <img src="{{ user.profile.image_url }}" alt="Profile Picture" 
+                                     class="rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;">
+                                {{ p_form.profile_pic|as_crispy_field }}
+                            </div>
+                            {{ p_form.bio|as_crispy_field }}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    {{ p_form.location|as_crispy_field }}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ p_form.birth_date|as_crispy_field }}
+                                </div>
+                            </div>
+                            {{ p_form.website|as_crispy_field }}
+                        </fieldset>
+                        <div class="form-group mt-4 d-flex justify-content-between">
+                            <a href="{% url 'users:profile' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to Profile
+                            </a>
+                            <button class="btn btn-primary" type="submit">
+                                <i class="bi bi-save"></i> Update Profile
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Preview image before upload
+    document.getElementById('id_profile_pic').addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.querySelector('.rounded-circle').src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+</script>
+{% endblock %}

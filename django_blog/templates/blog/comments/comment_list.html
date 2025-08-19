@@ -1,0 +1,25 @@
+{% load static %}
+{% load humanize %}
+
+<div id="comments-section" class="mt-5">
+    <h4 class="mb-4">
+        Comments 
+        <span class="badge bg-secondary">{{ comments.count }}</span>
+    </h4>
+    
+    {% if user.is_authenticated %}
+        {% include 'blog/comments/comment_form.html' with form=comment_form %}
+    {% else %}
+        <div class="alert alert-info">
+            <a href="{% url 'users:login' %}?next={{ request.path }}">Log in</a> to leave a comment.
+        </div>
+    {% endif %}
+    
+    <div class="mt-4">
+        {% for comment in comments %}
+            {% include 'blog/comments/comment_detail.html' with comment=comment %}
+        {% empty %}
+            <p class="text-muted">No comments yet. Be the first to comment!</p>
+        {% endfor %}
+    </div>
+</div>
