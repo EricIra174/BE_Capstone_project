@@ -1,24 +1,32 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework.routers import DefaultRouter
 from . import views
 
 app_name = 'api'
 
+# Create a router for API views
+router = DefaultRouter()
+
 urlpatterns = [
-    # Book CRUD endpoints using generic views
-    path('books/', views.BookListView.as_view(), name='book-list'),
-    path('books/create/', views.BookCreateView.as_view(), name='book-create'),
-    path('books/<int:pk>/', views.BookDetailView.as_view(), name='book-detail'),
-    path('books/<int:pk>/update/', views.BookUpdateView.as_view(), name='book-update'),
-    path('books/<int:pk>/delete/', views.BookDeleteView.as_view(), name='book-delete'),
+    # API root
+    path('', views.api_root, name='api-root'),
     
-    # Alternative combined CRUD endpoint
-    path('books/<int:pk>/crud/', views.BookCRUDView.as_view(), name='book-crud'),
+    # Authentication endpoints
+    path('auth/', include([
+        path('register/', views.UserRegistrationView.as_view(), name='user-register'),
+        path('token/', views.CustomTokenObtainPairView.as_view(), name='token-obtain'),
+        path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
+    ])),
     
-    # Author endpoints
-    path('authors/', views.AuthorListCreateView.as_view(), name='author-list-create'),
-    path('authors/<int:pk>/', views.AuthorDetailView.as_view(), name='author-detail'),
-    path('authors/<int:author_id>/books/', views.author_books_view, name='author-books'),
+    # User endpoints
+    path('users/me/', views.UserProfileView.as_view(), name='user-profile'),
     
-    # Test endpoint
-    path('test/', views.test_serializers_view, name='test-serializers'),
+    # Event endpoints
+    path('events/', include([
+        path('', views.EventListCreateView.as_view(), name='event-list'),
+        path('my-events/', views.UserEventsView.as_view(), name='user-events'),
+        path('<int:pk>/', views.EventDetailView.as_view(), name='event-detail'),
+        path('<int:event_id>/register/', views.EventRegistrationView.as_view(), name='event-register'),
+    ])),
 ]

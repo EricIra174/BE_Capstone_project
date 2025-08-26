@@ -1,102 +1,108 @@
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
-from datetime import datetime
+from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.core.validators import MinValueValidator
+from django.utils import timezone
 
-# Create your models here.
 
-class Author(models.Model):
-    """
-    Author Model
-    
-    Represents an author who can write multiple books.
-    This model establishes a one-to-many relationship with the Book model.
-    
-    Fields:
-        name: The author's full name as a string
-        created_at: Timestamp when the author record was created
-        updated_at: Timestamp when the author record was last updated
-    """
-    name = models.CharField(
-        max_length=200,
-        help_text="Enter the author's full name"
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        """Meta options for the Author model"""
-        ordering = ['name']  # Order authors alphabetically by name
-        verbose_name = "Author"
-        verbose_name_plural = "Authors"
-    
+class UserManager(BaseUserManager):
+    """Custom user model manager where email is the unique identifier."""
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('The Email must be set')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+        return self.create_user(email, password, **extra_fields)
+
+
+class User(AbstractUser):
+    """Custom user model that extends the default User model."""
+    username = models.CharField(max_length=150, unique=True)
+    email = models.EmailField(unique=True)
+    first_name = models.CharField(max_length=30, blank=True)
+    last_name = models.CharField(max_length=150, blank=True)
+    date_joined = models.DateTimeField(default=timezone.now)
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
+
+    objects = UserManager()
+
     def __str__(self):
-        """String representation of the Author model"""
-        return self.name
-    
-    def get_books_count(self):
-        """Returns the total number of books written by this author"""
-        return self.book_set.count()
+        return self.email
 
 
-class Book(models.Model):
+class Event(models.Model):
     """
-    Book Model
+    Event Model
     
-    Represents a book that is written by an author.
-    This model has a foreign key relationship with the Author model,
-    establishing a many-to-one relationship (many books can belong to one author).
-    
-    Fields:
-        title: The book's title as a string
-        publication_year: The year the book was published
-        author: Foreign key reference to the Author model
-        created_at: Timestamp when the book record was created
-        updated_at: Timestamp when the book record was last updated
+    Represents an event that can be created by users.
     """
     title = models.CharField(
-        max_length=300,
-        help_text="Enter the book's title"
+        max_length=200,
+        help_text='Enter the event title'
     )
-    publication_year = models.IntegerField(
-        validators=[
-            MinValueValidator(1000, message="Publication year must be at least 1000"),
-            MaxValueValidator(datetime.now().year, message="Publication year cannot be in the future")
-        ],
-        help_text="Enter the year the book was published"
+    description = models.TextField(
+        help_text='Enter a detailed description of the event'
     )
-    author = models.ForeignKey(
-        Author,
-        on_delete=models.CASCADE,  # If author is deleted, all their books are deleted
-        related_name='books',  # Allows accessing books via author.books.all()
-        help_text="Select the author of this book"
+    date_time = models.DateTimeField(
+        help_text='Enter the date and time of the event'
+    )
+    location = models.CharField(
+        max_length=200,
+        help_text='Enter the event location'
+    )
+    capacity = models.PositiveIntegerField(
+        validators=[MinValueValidator(1)],
+        help_text='Enter the maximum number of attendees'
+    )
+    organizer = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='organized_events',
+        help_text='Select the event organizer'
+    )
+    attendees = models.ManyToManyField(
+        User,
+        related_name='attending_events',
+        blank=True,
+        help_text='Users who are attending this event'
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
-        """Meta options for the Book model"""
-        ordering = ['-publication_year', 'title']  # Order by publication year (newest first), then title
-        verbose_name = "Book"
-        verbose_name_plural = "Books"
-        # Ensure unique constraint: same author cannot have multiple books with same title and year
-        unique_together = ['author', 'title', 'publication_year']
-    
+        ordering = ['date_time']
+
     def __str__(self):
-        """String representation of the Book model"""
-        return f"{self.title} by {self.author.name} ({self.publication_year})"
-    
+        return f"{self.title} - {self.date_time.strftime('%Y-%m-%d %H:%M')}"
+
+    def is_full(self):
+        """Check if the event has reached its capacity."""
+        return self.attendees.count() >= self.capacity
+
+    def can_register(self, user):
+        """Check if a user can register for this event."""
+        return not self.is_full() and user != self.organizer and not self.attendees.filter(id=user.id).exists()
+
     def clean(self):
-        """Custom validation method"""
+        """Validate the event data."""
         from django.core.exceptions import ValidationError
-        
-        # Additional validation: ensure publication year is not in the future
-        current_year = datetime.now().year
-        if self.publication_year > current_year:
-            raise ValidationError({
-                'publication_year': f'Publication year cannot be in the future. Current year is {current_year}.'
-            })
-    
+        if self.date_time < timezone.now():
+            raise ValidationError('Event date cannot be in the past')
+        if self.capacity < 1:
+            raise ValidationError('Capacity must be at least 1')
+
     def save(self, *args, **kwargs):
-        """Override save method to run validation"""
-        self.clean()
+        """Override save to run full_clean and update timestamps."""
+        self.full_clean()
         super().save(*args, **kwargs)
