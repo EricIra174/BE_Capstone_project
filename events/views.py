@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.db import models
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -10,6 +11,18 @@ from .serializers import (
     UserSerializer, CustomTokenObtainPairSerializer,
     EventSerializer, EventRegisterSerializer, EventRegistrationSerializer
 )
+
+
+class IsEventOrganizer(permissions.BasePermission):
+    """Custom permission to only allow event organizers to modify their events."""
+    
+    def has_object_permission(self, request, view, obj):
+        # Read permissions are allowed for any request
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        
+        # Write permissions are only allowed to the organizer
+        return obj.organizer == request.user
 
 
 class UserCreateView(generics.CreateAPIView):
@@ -56,7 +69,13 @@ class EventRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     """View for retrieving, updating, and deleting a single event."""
     queryset = Event.objects.all()
     serializer_class = EventSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsEventOrganizer]
+    
+    def get_queryset(self):
+        # Users can only see events they organized or all active events
+        if self.request.method in ['PUT', 'PATCH', 'DELETE']:
+            return Event.objects.filter(organizer=self.request.user, is_active=True)
+        return Event.objects.filter(is_active=True)
     
     def perform_destroy(self, instance):
         # Soft delete
